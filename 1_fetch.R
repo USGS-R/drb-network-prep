@@ -41,11 +41,15 @@ p1_targets_list <- list(
   tar_target(
     p1_GFv1_catchments_sf,
     {
-      sf::st_read(dsn = p1_GFv1_catchments_shp,layer="nhru", quiet=TRUE) %>%
-        filter(hru_segment %in% p1_GFv1_reaches_sf$subsegseg) %>%
-        suppressWarnings() %>%
-        # fix geometry issues by defining a zero-width buffer around the polylines
-        sf::st_buffer(.,0)
+      hru_layer_name <- grep("hru", sf::st_layers(p1_GFv1_catchments_shp)$name, value=TRUE)
+      sf::st_read(dsn = p1_GFv1_catchments_shp, layer = hru_layer_name, quiet=TRUE) %>%
+        # subset polygons within the DRB; region must be specified for national GF
+        filter(hru_segment %in% p1_GFv1_reaches_sf$subsegseg, region == "02") %>%
+        # fix geometry issues by defining a zero-width buffer around the polygon boundaries
+        sf::st_buffer(.,0) %>%
+        # format columns
+        select(any_of(gf_cols_select)) %>%
+        rename_with(.,function(x) case_when(x == "hru_id" ~ "hru_id_reg", TRUE ~ as.character(x)))
     }
   ),
   
