@@ -2,7 +2,7 @@ find_intersecting_hru <- function(prms_line,prms_hrus){
   #' 
   #' @description This function finds all of the HRU polygons that intersect a
   #' PRMS segment, and returns the HRU ID (i.e., hru_segment) that has the
-  #' greatest percent of overlap with the PRMS segment
+  #' greatest overlap with the PRMS segment
   #' 
   #' @param prms_line sf object containing one PRMS river segment of interest
   #' prms_line must contain variables subsegid and geometry
@@ -11,7 +11,9 @@ find_intersecting_hru <- function(prms_line,prms_hrus){
   
   # Transform PRMS segment and HRU's into a consistent projection
   # using Albers Equal Area Conic CONUS
-  prms_line_proj <- sf::st_transform(prms_line, 5070)
+  prms_line_proj <- sf::st_transform(prms_line, 5070) %>%
+    sf::st_buffer(5) %>%
+    select(subsegid, subsegseg, subseglen, fromsegs, toseg, tosubseg, segidnat)
   prms_hrus_proj <- sf::st_transform(prms_hrus, 5070)
 
   # Return the intersection between prms_line and HRU polygons 
@@ -20,12 +22,11 @@ find_intersecting_hru <- function(prms_line,prms_hrus){
   prms_line_intsct_hrus <- sf::st_intersection(prms_line_proj,prms_hrus_proj) %>%
     suppressWarnings()
   
-  # Calculate percent of overlap between each HRU and prms_line, where attribute
-  # `subseglen` is the length of the segment in meters
-  prms_line_intsct_hrus$length_percent = 100 * (sf::st_length(prms_line_intsct_hrus)/prms_line_intsct_hrus$subseglen)
+  # Find which hru_segment maximizes the area of overlap between the HRU and prms_line
+  prms_line_intsct_hrus$area_overlap <- as.numeric(sf::st_area(prms_line_intsct_hrus))
   
   # Return attribute `hru_segment` for the HRU that has the greatest overlap with prms_line
-  hru_segment <- prms_line_intsct_hrus$hru_segment[which.max(prms_line_intsct_hrus$length_percent)]
+  hru_segment <- prms_line_intsct_hrus$hru_segment[which.max(prms_line_intsct_hrus$area_overlap)]
   
   return(hru_segment)
   
@@ -141,15 +142,38 @@ munge_GFv1_catchments <- function(prms_lines,prms_hrus,segs_w_comids,segs_split,
     if(prms_line$subsegid %in% segs_split){
       cat <- prms_splitsegs %>%
         filter(PRMS_segid == prms_line$subsegid) %>%
+        # used manual inspection to match updated catchments with closest
+        # hru_id_nat from the NHM v1.0
         mutate(hru_segment = prms_line$subsegid,
-               hru_id = NA,
-               hru_area_m2 = as.numeric(sf::st_area(.))) %>%
-        select(PRMS_segid,hru_segment,hru_id,hru_area_m2)
+               hru_id_reg = case_when(
+                 PRMS_segid == "3_1" ~ "4042",
+                 PRMS_segid == "3_2" ~ "4043",
+                 PRMS_segid == "8_1" ~ "4785",
+                 PRMS_segid == "8_2" ~ "4785",
+                 PRMS_segid == "51_1" ~ "3433",
+                 PRMS_segid == "51_2" ~ "3428"),
+               hru_id_nat = case_when(
+                 PRMS_segid == "3_1" ~ "6504",
+                 PRMS_segid == "3_2" ~ "6505",
+                 PRMS_segid == "8_1" ~ "7247",
+                 PRMS_segid == "8_2" ~ "7247",
+                 PRMS_segid == "51_1" ~ "5895",
+                 PRMS_segid == "51_2" ~ "5890"),
+               region = "02",
+               hru_area_m2 = as.numeric(sf::st_area(.)),
+               hru_area_km2 = round(hru_area_m2/(1000*1000),3)) %>%
+        select(PRMS_segid,hru_segment,hru_id_reg,hru_id_nat,hru_area_m2,hru_area_km2,region)
     } else {
       cat <- prms_hrus %>%
         filter(hru_segment == prms_line$hru_segment) %>%
-        mutate(PRMS_segid = prms_line$subsegid) %>%
-        select(PRMS_segid,hru_segment,hru_id,Shape_Area) %>%
+        mutate(PRMS_segid = prms_line$subsegid,
+               hru_area_km2 = round(Shape_Area/(1000*1000),3),
+               hru_id_reg = as.character(hru_id_reg),
+               hru_id_nat = as.character(hru_id_nat),
+               hru_segment = as.character(hru_segment)) %>%
+        select(c(PRMS_segid,hru_id_reg,Shape_Area,hru_area_km2,
+                 any_of(gf_cols_select))) %>%
+        relocate(c(hru_segment,hru_id_nat),.after = PRMS_segid) %>%
         rename(geometry = Shape, hru_area_m2 = Shape_Area) 
     }
     
@@ -163,7 +187,7 @@ munge_GFv1_catchments <- function(prms_lines,prms_hrus,segs_w_comids,segs_split,
   }
   
   # Bind edited catchments into a single data frame
-  catchments_proc <- do.call("rbind",catchments_ls)
+  catchments_proc <- bind_rows(catchments_ls)
 
   return(catchments_proc)
   

@@ -34,7 +34,7 @@ p2_targets_list <- list(
   ),
   
   # Process catchments so that every PRMS segment has >= 1 corresponding HRU; In addition,
-  # adjust catchments for 3 segments that were split in `delaware-model-prep` pipeline
+  # adjust catchments for 3 segments that were split in delaware-model-prep pipeline
   # https://github.com/USGS-R/delaware-model-prep
   tar_target(
     p2_GFv1_catchments_edited_sf,
