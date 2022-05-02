@@ -29,8 +29,8 @@ p1_targets_list <- list(
     sf::st_read(dsn = unique(dirname(p1_GFv1_reaches_shp)), layer = "study_stream_reaches", quiet=TRUE)
   ),
   
-  # Download PRMS catchments for region 02
-  # from ScienceBase: https://www.sciencebase.gov/catalog/item/5362b683e4b0c409c6289bf6
+  # Download PRMS catchments from ScienceBase: 
+  # https://www.sciencebase.gov/catalog/item/5362b683e4b0c409c6289bf6
   tar_target(
     p1_GFv1_catchments_shp,
     get_gf(out_dir = "1_fetch/out/", sb_id = '5362b683e4b0c409c6289bf6', sb_name = gf_data_select),
@@ -38,10 +38,18 @@ p1_targets_list <- list(
   ),
   
   # Read PRMS catchment shapefile into sf object and filter to DRB
+  # For national-scale data, layer_name is "nhruNationalIdentifier"
+  # For regional-scale data, layer_name is "nhru"
   tar_target(
     p1_GFv1_catchments_sf,
     {
+      # Read in layer containing hru's. Since the name of the layer depends on regional vs.
+      # national-scale data, test that hru_layer_name is within set of expected options
+      # before proceeding
       hru_layer_name <- grep("hru", sf::st_layers(p1_GFv1_catchments_shp)$name, value=TRUE)
+      if(!hru_layer_name %in% c("nhru","nhruNationalIdentifier"))
+        stop("Error: hru_layer_name differs from expected values. Check catchments shapefile.")
+      # Read in catchment shapefile
       sf::st_read(dsn = p1_GFv1_catchments_shp, layer = hru_layer_name, quiet=TRUE) %>%
         # subset polygons within the DRB; region must be specified for national GF
         filter(hru_segment %in% p1_GFv1_reaches_sf$subsegseg, region == "02") %>%

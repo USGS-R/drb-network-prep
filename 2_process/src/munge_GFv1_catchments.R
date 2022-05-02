@@ -9,9 +9,12 @@ find_intersecting_hru <- function(prms_line,prms_hrus){
   #' @param prms_hrus sf (multi)polygon containing the HRU's from the NHGFv1
   #
   
-  # Transform PRMS segment and HRU's into a consistent projection
-  # using Albers Equal Area Conic CONUS
+  # Transform PRMS segment and HRU's into a consistent projection using Albers Equal
+  # Area Conic CONUS
   prms_line_proj <- sf::st_transform(prms_line, 5070) %>%
+    # add some small buffer (arbitrary, equal to 5m) so that we can identify the hru with
+    # the greatest overlap with prms_line using the intersected area between 
+    # prms_line_proj and prms_hrus_proj.
     sf::st_buffer(5) %>%
     select(subsegid, subsegseg, subseglen, fromsegs, toseg, tosubseg, segidnat)
   prms_hrus_proj <- sf::st_transform(prms_hrus, 5070)
