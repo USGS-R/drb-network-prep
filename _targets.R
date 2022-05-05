@@ -12,8 +12,16 @@ dir.create("1_fetch/log/", showWarnings = FALSE)
 dir.create("2_process/out/", showWarnings = FALSE)
 dir.create("2_process/log/", showWarnings = FALSE)
 
-# Define dataset of interest for the national geospatial fabric (used to fetch PRMS catchment polygons):
-gf_data_select <- 'GeospatialFabricFeatures_02.zip'
+# Define dataset of interest from the national hydrologic geospatial fabric, NHGF 
+# (used to fetch PRMS catchment polygons); values entered below can take two forms 
+# to indicate preference for the national-scale data ("GeospatialFabric_National.gdb.zip) 
+# or the regional-scale data ("GeospatialFabricFeatures_XX.zip"), where "XX" refers to 
+# the region id/vpu of interest.
+gf_data_select <- 'GeospatialFabric_National.gdb.zip'
+
+# Define which columns related to HRU polygons to keep
+# In national GF, hru_id is identical to hru_id_reg 
+gf_cols_select <- c("hru_id_nat","hru_id","hru_segment","region","Shape_Area")
 
 # Define minor HUCs (hydrologic unit codes) that make up the DRB to use in calls to dataRetrieval functions
 # Lower Delaware: 0204 subregion (for now, exclude New Jersey Coastal (https://water.usgs.gov/GIS/huc_name.html)
