@@ -13,6 +13,9 @@ p2_targets_list <- list(
     create_GFv1_NHDv2_xwalk(prms_lines = p1_GFv1_reaches_sf,
                             nhd_lines = p1_nhdv2reaches_sf,
                             prms_hrus = p1_GFv1_catchments_sf,
+                            # For PRMS segments requiring special handling to find contributing NHDPlusV2
+                            # catchments (drb_segs_spatial), retain NHDPlusV2 catchments where >= 50% of
+                            # the NHD catchment area overlaps that PRMS/NHGF HRU area
                             min_area_overlap = 0.5,
                             drb_segs_spatial = drb_segs_spatial)
   ),

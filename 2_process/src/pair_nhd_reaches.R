@@ -54,7 +54,14 @@ pair_nhd_reaches <- function(nhd_lines,prms_line){
   # Save df containing paired NHD reaches
   df_out <- between_lines %>%
     mutate(PRMS_segid = prms_line$subsegid) %>%
-    select(PRMS_segid,COMID,HYDROSEQ,LEVELPATHI,REACHCODE,STREAMORDE,STREAMCALC)
+    # save segidnat column from PRMS lines, adding special handling
+    # to impute segidnat values for split segments
+    mutate(segidnat = case_when(
+      PRMS_segid == "3_1" ~ as.integer("1437"),
+      PRMS_segid == "8_1" ~ as.integer("1442"),
+      PRMS_segid == "51_1" ~ as.integer("1485"),
+      TRUE ~ prms_line$segidnat)) %>%
+    select(PRMS_segid,segidnat,COMID,HYDROSEQ,LEVELPATHI,REACHCODE,STREAMORDE,STREAMCALC)
   
   return(df_out)
   
@@ -119,7 +126,7 @@ summarize_paired_comids <- function(paired_nhd_df){
     # identify most downstream NHDPlusV2 reach (comid_down) for each PRMS segment that does not represent a divergence
     filter(STREAMORDE==STREAMCALC) %>%
     filter(HYDROSEQ==min(HYDROSEQ)) %>% 
-    select(PRMS_segid,COMID,comid_seg) %>%
+    select(PRMS_segid,segidnat,COMID,comid_seg) %>%
     rename(comid_down = COMID)
   
   return(comids_out)
