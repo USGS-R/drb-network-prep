@@ -22,6 +22,7 @@ create_GFv1_NHDv2_xwalk <- function(prms_lines, nhd_lines, prms_hrus,
   #' NHD attribute "AREASQKM" is greater than zero. Defaults to FALSE.
   #
   
+  # Pass NHDPlusV2 flowlines with or without divergences to downstream crosswalk functions
   if(omit_divergences){
     nhd_lines_select <- nhd_lines %>%
       filter(STREAMORDE == STREAMCALC)
@@ -29,13 +30,22 @@ create_GFv1_NHDv2_xwalk <- function(prms_lines, nhd_lines, prms_hrus,
     nhd_lines_select <- nhd_lines
   }
   
+  # NHDPlusV2 reaches where AREASQKM equals zero are expected to be relatively short,
+  # so assign a max reach length (km) such that a message is printed to the console if 
+  # omit_zero_area_flines is TRUE and an omitted reach is longer than the 25 percent
+  # quantile of all reach lengths
+  zero_area_flines_max_length <- as.numeric(
+    quantile(nhd_lines_select$LENGTHKM, 0.25, na.rm = TRUE))
+
   # find NHDPlusV2 COMID's that intersect PRMS segments
   reach_to_seg_xwalk <- prms_lines %>%
     split(.,.$subsegid) %>%
     purrr::map(.,pair_nhd_reaches,
                nhd_lines = nhd_lines_select, 
                omit_divergences = omit_divergences, 
-               omit_zero_area_flines = omit_zero_area_flines) %>%
+               omit_zero_area_flines = omit_zero_area_flines,
+               zero_area_flines_max_length = zero_area_flines_max_length
+               ) %>%
     purrr::map(.,summarize_paired_comids) %>%
     bind_rows()
   
@@ -48,7 +58,8 @@ create_GFv1_NHDv2_xwalk <- function(prms_lines, nhd_lines, prms_hrus,
                nhd_lines = nhd_lines_select,
                xwalk_table = reach_to_seg_xwalk,
                drb_segs_spatial = drb_segs_spatial,
-               omit_zero_area_flines = omit_zero_area_flines) %>%
+               omit_zero_area_flines = omit_zero_area_flines,
+               zero_area_flines_max_length = zero_area_flines_max_length) %>%
     bind_rows() %>%
     left_join(reach_to_seg_xwalk,.,by="PRMS_segid")
   
