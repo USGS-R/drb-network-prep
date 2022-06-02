@@ -72,14 +72,8 @@ pair_nhd_reaches <- function(nhd_lines, prms_line,
   # Save df containing paired NHD reaches
   df_paired <- between_lines %>%
     # save segidnat column from PRMS lines
-    mutate(PRMS_segid = prms_line$subsegid) %>%
-    # save segidnat column from PRMS lines, adding special handling
-    # to indicate segidnat values for split segments
-    mutate(segidnat = case_when(
-      PRMS_segid == "3_1" ~ as.integer("1437"),
-      PRMS_segid == "8_1" ~ as.integer("1442"),
-      PRMS_segid == "51_1" ~ as.integer("1485"),
-      TRUE ~ prms_line$segidnat)) 
+    mutate(PRMS_segid = prms_line$subsegid,
+           segidnat = prms_line$segidnat)
   
   # If omit_zero_area_flines is TRUE, edit df to only return COMIDs where 
   # attribute AREASQKM != 0 (unless there is only one COMID matched to the 

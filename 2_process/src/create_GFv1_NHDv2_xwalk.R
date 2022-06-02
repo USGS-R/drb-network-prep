@@ -30,6 +30,13 @@ create_GFv1_NHDv2_xwalk <- function(prms_lines, nhd_lines, prms_hrus,
     nhd_lines_select <- nhd_lines
   }
   
+  # Add special handling for split segments so that all split segments have a value
+  # for segidnat (instead of NA)
+  prms_lines_complete <- prms_lines %>%
+    group_by(subsegseg) %>%
+    mutate(segidnat = segidnat[!is.na(segidnat)]) %>%
+    ungroup()
+  
   # NHDPlusV2 reaches where AREASQKM equals zero are expected to be relatively short,
   # so assign a max reach length (km) such that a message is printed to the console if 
   # omit_zero_area_flines is TRUE and an omitted reach is longer than the 25 percent
@@ -38,7 +45,7 @@ create_GFv1_NHDv2_xwalk <- function(prms_lines, nhd_lines, prms_hrus,
     quantile(nhd_lines_select$LENGTHKM, 0.25, na.rm = TRUE))
 
   # find NHDPlusV2 COMID's that intersect PRMS segments
-  reach_to_seg_xwalk <- prms_lines %>%
+  reach_to_seg_xwalk <- prms_lines_complete %>%
     split(.,.$subsegid) %>%
     purrr::map(.,pair_nhd_reaches,
                nhd_lines = nhd_lines_select, 
@@ -50,7 +57,7 @@ create_GFv1_NHDv2_xwalk <- function(prms_lines, nhd_lines, prms_hrus,
     bind_rows()
   
   # find NHDPlusV2 COMID's that drain directly to PRMS segments
-  cats_to_seg_xwalk <- prms_lines %>%
+  cats_to_seg_xwalk <- prms_lines_complete %>%
     split(.,.$subsegid) %>%
     purrr::map(.,pair_nhd_catchments,
                prms_hrus = prms_hrus,
