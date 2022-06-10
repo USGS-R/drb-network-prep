@@ -8,7 +8,7 @@ pair_nhd_reaches <- function(nhd_lines, prms_line,
   #' nhd_lines must contain variables COMID,STREAMORDE,STREAMCALC,HYDROSEQ,FROMNODE,TONODE
   #' @param prms_line sf linestring representing the target PRMS segment
   #' @param omit_divergences logical; if TRUE, only return paired NHDv2 reaches that are 
-  #' part of the dendritic river network (i.e., streamcalc = streamorder). Defaults to TRUE.
+  #' part of the dendritic river network (i.e., streamcalc = streamorder).
   #' @param omit_zero_area_flines logical; if TRUE, only return paired NHDPlusv2 reaches 
   #' where the NHDPlus attribute "AREASQKM" is greater than zero. 
   #' @param zero_area_flines_max_length integer; zero-area reaches are expected to be

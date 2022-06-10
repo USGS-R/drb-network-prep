@@ -65,6 +65,7 @@ create_GFv1_NHDv2_xwalk <- function(prms_lines, nhd_lines, prms_hrus,
                nhd_lines = nhd_lines_select,
                xwalk_table = reach_to_seg_xwalk,
                drb_segs_spatial = drb_segs_spatial,
+               omit_divergences = omit_divergences,
                omit_zero_area_flines = omit_zero_area_flines,
                zero_area_flines_max_length = zero_area_flines_max_length) %>%
     bind_rows() %>%

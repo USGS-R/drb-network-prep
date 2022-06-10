@@ -1,5 +1,6 @@
 pair_nhd_catchments <- function(prms_line, prms_hrus, min_area_overlap, xwalk_table,
-                                nhd_lines, drb_segs_spatial, omit_zero_area_flines,
+                                nhd_lines, drb_segs_spatial, 
+                                omit_divergences, omit_zero_area_flines,
                                 zero_area_flines_max_length){
   #'
   #' @description This function finds the NHDPlusV2 catchments that overlap the HRU's for each PRMS segment in the DRB. 
@@ -20,6 +21,8 @@ pair_nhd_catchments <- function(prms_line, prms_hrus, min_area_overlap, xwalk_ta
   #' @param drb_segs_spatial character vector containing the identity of PRMS segments that require special handling
   #' For these segments, the contributing NHD catchments will be determined using a spatial join with the 
   #' PRMS HRU polygons
+  #' @param omit_divergences logical; if TRUE, only return paired NHDv2 reaches that are 
+  #' part of the dendritic river network (i.e., streamcalc = streamorder).
   #' @param omit_zero_area_flines logical; if TRUE, only return NHDPlusv2 reaches where the NHDPlus atttribute
   #' "AREASQKM" is greater than zero.
   #' @param zero_area_flines_max_length integer; zero-area reaches are expected to be
@@ -32,6 +35,7 @@ pair_nhd_catchments <- function(prms_line, prms_hrus, min_area_overlap, xwalk_ta
   #'                               xwalk_table = p2_prms_nhdv2_xwalk,
   #'                               nhd_lines = p1_nhdv2reaches_sf,
   #'                               drb_segs_spatial = "3_1",
+  #'                               omit_divergences = TRUE,
   #'                               omit_zero_area_flines = TRUE, 
   #'                               zero_area_flines_max_length = 0.25)
   #'                               
@@ -41,6 +45,7 @@ pair_nhd_catchments <- function(prms_line, prms_hrus, min_area_overlap, xwalk_ta
     comid_cat <- get_intersecting_nhdplus_catchments(prms_line,
                                                      prms_hrus,
                                                      min_area_overlap, 
+                                                     omit_divergences,
                                                      omit_zero_area_flines,
                                                      zero_area_flines_max_length)    
   } else {
@@ -60,6 +65,7 @@ pair_nhd_catchments <- function(prms_line, prms_hrus, min_area_overlap, xwalk_ta
 
 get_intersecting_nhdplus_catchments <- function(prms_line, prms_hrus,
                                                 min_area_overlap,
+                                                omit_divergences,
                                                 omit_zero_area_flines,
                                                 zero_area_flines_max_length){
   #' @description This function uses a spatial join to find the NHDPlusV2 catchments 
@@ -69,6 +75,8 @@ get_intersecting_nhdplus_catchments <- function(prms_line, prms_hrus,
   #' @param prms_hrus sf (multi)polygon containing the HRU's from the NHGF
   #' @param min_area_overlap float; value indicating the minimum proportion of NHDPlusV2 
   #' catchment area that overlaps the PRMS polygon in order to be retained
+  #' @param omit_divergences logical; if TRUE, only return paired NHDv2 reaches that are 
+  #' part of the dendritic river network (i.e., streamcalc = streamorder).
   #' @param omit_zero_area_flines logical; if TRUE, only return NHDPlusv2 reaches where 
   #' the NHDPlus atttribute "AREASQKM" is greater than zero.
   #' @param zero_area_flines_max_length integer; zero-area reaches are expected to be
@@ -102,19 +110,31 @@ get_intersecting_nhdplus_catchments <- function(prms_line, prms_hrus,
       # reformat variable names to uppercase
       rename_with(.,toupper,id:enabled)
     
+    # If omit_divergences is TRUE, edit df to only return COMIDs where 
+    # attribute STREAMCALC = STREAMORDE (unless there is only one COMID that
+    # drains to the PRMS line, in which case keep the divergent reach to make
+    # sure that all PRMS/NHM segments are represented in the output data frame).
+    if(omit_divergences & length(nhd_flines_intrsct$COMID) > 1){
+      
+      nhd_flines_select <- nhd_flines_intrsct %>%
+        filter(STREAMORDE == STREAMCALC)
+    } else {
+      nhd_flines_select <- nhd_flines_intrsct
+    }
+    
     # If omit_zero_area_flines is TRUE, edit df to only return COMIDs where 
     # attribute AREASQKM != 0 (unless there is only one COMID that drains to the 
     # PRMS line, in which case keep the AREASQKM = 0 COMID to make sure that
     # all PRMS/NHM segments are represented in the output data frame).
-    if(omit_zero_area_flines & length(nhd_flines_intrsct$COMID) > 1){
+    if(omit_zero_area_flines & length(nhd_flines_select$COMID) > 1){
       
-      nhd_flines_out <- nhd_flines_intrsct %>%
+      nhd_flines_out <- nhd_flines_select %>%
         filter(AREASQKM > 0) 
       
       # Subset COMIDs that would be excluded because AREASQKM is zero, and print
       # a message to the console letting the user know if any of the excluded COMIDs
       # have a reach length greater than zero_area_flines_max_length.
-      nhd_flines_excluded <- setdiff(nhd_flines_intrsct,nhd_flines_out)
+      nhd_flines_excluded <- setdiff(nhd_flines_select,nhd_flines_out)
       
       if(any(nhd_flines_excluded$LENGTHKM > zero_area_flines_max_length)){
         message(sprintf(
@@ -124,7 +144,7 @@ get_intersecting_nhdplus_catchments <- function(prms_line, prms_hrus,
       }
       
     } else {
-      nhd_flines_out <- nhd_flines_intrsct
+      nhd_flines_out <- nhd_flines_select
     }
     
     # Save intersecting catchment COMID's
