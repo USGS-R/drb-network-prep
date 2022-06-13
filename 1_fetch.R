@@ -65,6 +65,30 @@ p1_targets_list <- list(
   tar_target(
     p1_nhdv2reaches_sf,
     get_nhdv2_flowlines(drb_huc8s)
+  ),
+  
+  # Download NHDPlusv2 catchments for the DRB
+  tar_target(
+    p1_nhdv2_catchments_sf,
+    {
+      comids <- p1_nhdv2reaches_sf %>%
+        filter(AREASQKM > 0) %>%
+        pull(COMID)
+      get_nhdplusv2_catchments(comids)
+    }
+  ),
+  
+  # Save NHDPlusv2 catchments as a geopackage
+  tar_target(
+    p1_nhdv2_catchments_gpkg,
+    write_sf(p1_nhdv2_catchments_sf,
+             dsn = "1_fetch/out/NHDPlusv2_catchments.gpkg", 
+             layer = "NHDPlusv2_catchments", 
+             driver = "gpkg",
+             quiet = TRUE,
+             # overwrite layer if already exists
+             append = FALSE),
+    format = "file"
   )
   
 )
