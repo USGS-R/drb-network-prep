@@ -5,6 +5,7 @@ _targets/
 
 #All output
 */out/*
+!1_fetch/out/NHDPlusv2_catchments.gpkg
 !2_process/out/GFv1_NHDv2_xwalk.csv
 !2_process/out/GFv1_catchments_edited.gpkg
 */tmp/*
