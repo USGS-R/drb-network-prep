@@ -2,5 +2,5 @@ tar_name,filepath,hash
 p1_GFv1_reaches_sf,NA,e22a09007f48d21c
 p1_GFv1_catchments_sf,NA,0f455778db8b949f
 p1_nhdv2reaches_sf,NA,6347464675dfa8a4
-p2_prms_nhdv2_xwalk,NA,942ab04f0c794a03
-p2_prms_nhdv2_xwalk_csv,2_process/out/GFv1_NHDv2_xwalk.csv,9a20df429b73f841
+p2_prms_nhdv2_xwalk,NA,089609a1bb5ca92c
+p2_prms_nhdv2_xwalk_csv,2_process/out/GFv1_NHDv2_xwalk.csv,96f1fc4a3b6a30a3

@@ -28,14 +28,6 @@ gf_cols_select <- c("hru_id_nat","hru_id","hru_segment","region","Shape_Area")
 drb_huc8s <- c("02040101","02040102","02040103","02040104","02040105","02040106",
                "02040201","02040202","02040203","02040204","02040205","02040206","02040207")
 
-# Define PRMS segments that require special handling for the Geospatial Fabric (GFv1) to NHDplusV2 crosswalk target
-# These segments were flagged because the cumulative NHD catchment areas are considerably different from the 
-# summed area of the corresponding HRU's from the NHGFv1. For these segments, contributing NHDPlusV2 catchments 
-# are identified using a spatial join with the corresponding PRMS HRU's. More details can be found in the 
-# USGS-R/drb-inland-salinity-ml repo: https://github.com/USGS-R/drb-inland-salinity-ml/issues/45
-drb_segs_spatial <- c("31_1","135_1","233_1","236_1","244_1","249_1","332_1","354_1","355_1","358_1","396_1","593_1","1256_1","2137_1",
-                      "2138_1","2757_1","2758_1","2759_1","2765_1","2766_1","2767_1","2772_1","2797_1")
-
 # Define the PRMS segments that were split within the USGS-R/delaware-model-prep pipeline; these 
 # segments require special handling to return proper catchment areas in place of NHGFv1 HRUs
 GFv1_segs_split <- c("3_1","3_2","8_1","8_2","51_1","51_2")
