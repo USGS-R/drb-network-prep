@@ -1,21 +1,22 @@
+#' @description Function to pair PRMS segments with associated NHDPlusV2 flowlines
+#'
+#' @param nhd_lines sf object containing NHDPlusV2 flowlines for area of interest
+#' nhd_lines must contain variables COMID,STREAMORDE,STREAMCALC,HYDROSEQ,FROMNODE,TONODE
+#' @param prms_line sf linestring representing the target PRMS segment
+#' @param omit_divergences logical; if TRUE, only return paired NHDv2 reaches that are 
+#' part of the dendritic river network (i.e., streamcalc = streamorder).
+#' @param omit_zero_area_flines logical; if TRUE, only return paired NHDPlusv2 reaches 
+#' where the NHDPlus attribute "AREASQKM" is greater than zero. 
+#' @param zero_area_flines_max_length integer; zero-area reaches are expected to be
+#' relatively short, so a message is printed to the console if `omit_zero_area_flines` 
+#' is TRUE and `LENGTHKM` of an omitted reach exceeds `zero_area_flines_max_length`.
+#'
+#' @value Data frame containing the paired NHDPlusV2 reaches
+#' 
 pair_nhd_reaches <- function(nhd_lines, prms_line, 
                              omit_divergences, omit_zero_area_flines, 
                              zero_area_flines_max_length){
-  #' 
-  #' @description Function to pair PRMS segments with associated NHDPlusV2 flowlines
-  #'
-  #' @param nhd_lines sf object containing NHDPlusV2 flowlines for area of interest
-  #' nhd_lines must contain variables COMID,STREAMORDE,STREAMCALC,HYDROSEQ,FROMNODE,TONODE
-  #' @param prms_line sf linestring representing the target PRMS segment
-  #' @param omit_divergences logical; if TRUE, only return paired NHDv2 reaches that are 
-  #' part of the dendritic river network (i.e., streamcalc = streamorder).
-  #' @param omit_zero_area_flines logical; if TRUE, only return paired NHDPlusv2 reaches 
-  #' where the NHDPlus attribute "AREASQKM" is greater than zero. 
-  #' @param zero_area_flines_max_length integer; zero-area reaches are expected to be
-  #' relatively short, so a message is printed to the console if `omit_zero_area_flines` 
-  #' is TRUE and `LENGTHKM` of an omitted reach exceeds `zero_area_flines_max_length`.
-  #'
-  #' @value Data frame containing the paired NHDPlusV2 reaches
+
   
   # Project PRMS and NHD reach lines:
   prms_line_proj <- sf::st_transform(prms_line,5070)
@@ -38,21 +39,23 @@ pair_nhd_reaches <- function(nhd_lines, prms_line,
   # Identify furthest upstream and downstream COMIDs within the group of associated 
   # NHD reaches (omitting divergences)
   nhd_paired_down <- nhd_paired %>%
-    filter(STREAMORDE==STREAMCALC) %>%
-    filter(HYDROSEQ==min(HYDROSEQ))
+    filter(STREAMORDE == STREAMCALC) %>%
+    filter(HYDROSEQ == min(HYDROSEQ))
   
   nhd_paired_up <- nhd_paired %>%
-    filter(STREAMORDE==STREAMCALC) %>%
-    filter(HYDROSEQ==max(HYDROSEQ))
+    filter(STREAMORDE == STREAMCALC) %>%
+    filter(HYDROSEQ == max(HYDROSEQ))
   
   # Add in special handling for select PRMS segments 
-  # PRMS line "341_1" doesn't completely overlap NHD, leading to misleading upstream HYDROSEQ id
-  if(prms_line$subsegid=="341_1"){
+  # PRMS line "341_1" doesn't completely overlap NHD, leading to misleading 
+  # upstream HYDROSEQ id
+  if(prms_line$subsegid == "341_1"){
     nhd_paired_up <- nhd_paired %>%
       filter(COMID == "4480903")
   }
-  # The upstream COMID associated with PRMS subsegid "2765_1" likely does not drain to the 
-  # downstream COMID, leading to infinite recursion errors if omit_divergences is TRUE
+  # The upstream COMID associated with PRMS subsegid "2765_1" likely does 
+  # not drain to the downstream COMID, leading to infinite recursion errors 
+  # if omit_divergences is TRUE
   if(omit_divergences & prms_line$subsegid == "2765_1"){
     nhd_paired_up <- nhd_paired %>%
       filter(COMID == "9484458")
@@ -66,7 +69,7 @@ pair_nhd_reaches <- function(nhd_lines, prms_line,
     between_lines <- traverse_nhd(nhd_lines = nhd_lines,
                                   paired_flines = nhd_paired,
                                   down_comid = nhd_paired_down$COMID,
-                                  up_comid=nhd_paired_up$COMID)
+                                  up_comid = nhd_paired_up$COMID)
   }
   
   # Save df containing paired NHD reaches
@@ -110,21 +113,21 @@ pair_nhd_reaches <- function(nhd_lines, prms_line,
 
 
 
+#' @description Function to traverse NHDPlusV2 between user-specified upstream/downstream COMIDs 
+#' using FromNode and ToNode attributes
+#'
+#' @param nhd_lines sf object containing NHDPlusV2 flowlines for area of interest
+#' nhd_lines must contain variables COMID, FROMNODE, and TONODE
+#' @param paired_flines sf object containing NHDPlusV2 reaches associated with a target PRMS segment
+#' @param down_comid integer containing the COMID of the most downstream NHDPlusV2 reach associated 
+#' with a target PRMS segment
+#' @param up_comid integer containing the COMID of the most upstream NHDPlusV2 reach associated with 
+#' a target PRMS segment
+#'
+#' @value data frame containing all of the NHDPlusV2 reaches between down_comid and up_comid
+#' 
 traverse_nhd <- function(nhd_lines,paired_flines,down_comid,up_comid){
-  #' 
-  #' @description Function to traverse NHDPlusV2 between user-specified upstream/downstream COMIDs 
-  #' using FromNode and ToNode attributes
-  #'
-  #' @param nhd_lines sf object containing NHDPlusV2 flowlines for area of interest
-  #' nhd_lines must contain variables COMID, FROMNODE, and TONODE
-  #' @param paired_flines sf object containing NHDPlusV2 reaches associated with a target PRMS segment
-  #' @param down_comid integer containing the COMID of the most downstream NHDPlusV2 reach associated 
-  #' with a target PRMS segment
-  #' @param up_comid integer containing the COMID of the most upstream NHDPlusV2 reach associated with 
-  #' a target PRMS segment
-  #'
-  #' @value data frame containing all of the NHDPlusV2 reaches between down_comid and up_comid
-  
+
   nhd_lines_df <- nhd_lines %>%
     sf::st_drop_geometry() 
   
@@ -152,18 +155,18 @@ traverse_nhd <- function(nhd_lines,paired_flines,down_comid,up_comid){
   }
   
 }
-
-
-
-summarize_paired_comids <- function(paired_nhd_df){
-  #' 
-  #' @description Function to summarize the paired NHDPlusV2 reaches for each PRMS segment 
-  #'
-  #' @param paired_nhd_df data frame containing the paired NHDPlusV2 reaches associated with 
-  #' each PRMS segment, where each row represents one PRMS segment. comid_down contains the 
-  #' NHDPlusV2 reach at the downstream end of the PRMS segment, whereas comid_seg represents 
-  #' all of the contributing NHDPlusV2 reaches.
   
+
+
+#' @description Function to summarize the paired NHDPlusV2 reaches for each PRMS segment 
+#'
+#' @param paired_nhd_df data frame containing the paired NHDPlusV2 reaches associated with 
+#' each PRMS segment, where each row represents one PRMS segment. comid_down contains the 
+#' NHDPlusV2 reach at the downstream end of the PRMS segment, whereas comid_seg represents 
+#' all of the contributing NHDPlusV2 reaches.
+#' 
+summarize_paired_comids <- function(paired_nhd_df){
+
   comids_out <- paired_nhd_df %>%
     group_by(PRMS_segid) %>% 
     # concatenate all paired NHDPlusV2 reaches into one column, comid_seg
