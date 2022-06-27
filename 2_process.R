@@ -32,7 +32,8 @@ p2_targets_list <- list(
                             omit_zero_area_flines = FALSE)
   ),
   # 3) Crosswalk table with zero-area flowlines removed (i.e., don't return any COMIDs
-  # where the AREASQKM attribute equals zero)
+  # where the AREASQKM attribute equals zero). Divergences are retained to avoid any
+  # "holes" in the catchment areas. See https://github.com/USGS-R/drb-network-prep/issues/18
   tar_target(
     p2_prms_nhdv2_xwalk_omit_zero_area,
     create_GFv1_NHDv2_xwalk(prms_lines = p1_GFv1_reaches_sf,
@@ -102,7 +103,9 @@ p2_targets_list <- list(
   tar_target(
     p2_data_summary_csv,
     write_ind_files("2_process/log/GFv1_data_summary.csv",
-                    force_dep = p2_prms_nhdv2_xwalk_csv,
+                    force_dep = c(p2_prms_nhdv2_xwalk_csv,
+                                  p2_prms_nhdv2_xwalk_omit_divergences_csv,
+                                  p2_prms_nhdv2_xwalk_omit_zero_area_csv),
                     target_names = c("p1_GFv1_reaches_sf","p1_GFv1_catchments_sf","p1_nhdv2reaches_sf",
                                      "p1_nhdv2_catchments_sf","p1_nhdv2_catchments_gpkg",
                                      "p2_prms_nhdv2_xwalk","p2_prms_nhdv2_xwalk_csv",
