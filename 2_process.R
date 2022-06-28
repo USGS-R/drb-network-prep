@@ -2,6 +2,7 @@ source("2_process/src/pair_nhd_reaches.R")
 source("2_process/src/pair_nhd_catchments.R")
 source("2_process/src/create_GFv1_NHDv2_xwalk.R")
 source("2_process/src/munge_GFv1_catchments.R")
+source("2_process/src/calc_distance_functions.R")
 source("2_process/src/write_data.R")
 source("2_process/src/write_ind_files.R")
 
@@ -95,6 +96,43 @@ p2_targets_list <- list(
              # overwrite layer if already exists
              append = FALSE),
     format = "file"
+  ),
+  
+  # Reshape GFv1-NHDv2 xwalk table (without divergences) to return COMIDs that 
+  # overlap each PRMS segment
+  tar_target(
+    p2_drb_comids_segs_omit_divergences, 
+    p2_prms_nhdv2_xwalk_omit_divergences %>%
+      select(PRMS_segid, comid_seg) %>% 
+      tidyr::separate_rows(comid_seg,sep=";") %>% 
+      rename(COMID = comid_seg)
+  ),
+  
+  # Subset NHDPlusv2 flowlines to use as input to adjacency matrix
+  tar_target(
+    p2_nhdv2_reaches_omit_divergences_sf,
+    p1_nhdv2reaches_sf %>%
+      filter(COMID %in% p2_drb_comids_segs_omit_divergences$COMID)
+  ),
+  
+  # Create NHDPlusv2 network adjacency matrix
+  tar_target(
+    p2_nhdv2_adj_matrix,
+    calc_dist_matrices_nhd(p2_nhdv2_reaches_omit_divergences_sf)
+  ),
+  
+  # Save NHDPlusv2 adjacency matrix as npz file
+  tar_target(
+    p2_nhdv2_adj_matrix_npz,
+    {
+      np <- reticulate::import("numpy")
+      fileout <- "2_process/out/nhdv2_distance_matrix.npz"
+      np$savez(fileout, 
+               rowcolnames = p2_nhdv2_reaches_omit_divergences_sf$COMID,
+               updown = p2_nhdv2_adj_matrix$updown)
+      fileout
+    },
+    format = 'file'
   ),
   
   # Create and save indicator file
