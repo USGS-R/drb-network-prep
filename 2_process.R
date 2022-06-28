@@ -143,14 +143,16 @@ p2_targets_list <- list(
     write_ind_files("2_process/log/GFv1_data_summary.csv",
                     force_dep = c(p2_prms_nhdv2_xwalk_csv,
                                   p2_prms_nhdv2_xwalk_omit_divergences_csv,
-                                  p2_prms_nhdv2_xwalk_omit_zero_area_csv),
+                                  p2_prms_nhdv2_xwalk_omit_zero_area_csv,
+                                  p2_nhdv2_adj_matrix_npz),
                     target_names = c("p1_GFv1_reaches_sf","p1_GFv1_catchments_sf","p1_nhdv2reaches_sf",
                                      "p1_nhdv2_catchments_sf","p1_nhdv2_catchments_gpkg",
                                      "p2_prms_nhdv2_xwalk","p2_prms_nhdv2_xwalk_csv",
                                      "p2_prms_nhdv2_xwalk_omit_divergences",
                                      "p2_prms_nhdv2_xwalk_omit_divergences_csv",
                                      "p2_prms_nhdv2_xwalk_omit_zero_area",
-                                     "p2_prms_nhdv2_xwalk_omit_zero_area_csv")),
+                                     "p2_prms_nhdv2_xwalk_omit_zero_area_csv",
+                                     "p2_nhdv2_adj_matrix","p2_nhdv2_adj_matrix_npz")),
     format = "file"),
   
   # Create and save sf session info
