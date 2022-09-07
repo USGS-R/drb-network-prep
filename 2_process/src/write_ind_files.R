@@ -11,8 +11,12 @@ write_ind_files <- function(fileout,target_names,force_dep) {
   
   # Create indicator table
   ind_tbl <- tar_meta(all_of(target_names)) %>%
-    select(tar_name = name, filepath = path, hash = data) %>%
-    mutate(filepath = unlist(filepath))
+    select(tar_name = name, 
+           latest_build_date = time, 
+           filepath = path, 
+           hash = data) %>%
+    mutate(filepath = unlist(filepath),
+           latest_build_date = as.Date(latest_build_date))
   
   # Save indicator table
   readr::write_csv(ind_tbl, fileout)
