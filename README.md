@@ -1,6 +1,10 @@
 # drb-network-prep
 Code repo to prepare the river network for modeling in the Delaware River Basin  
   
+**NOTE: This repository has been moved to an internal GitLab repository. The 
+repository at https://github.com/USGS-R/drb-network-prep is considered archived 
+and will no longer be actively monitored or maintained.**
+  
 ## Prep the DRB river network for modeling  
 Nothing here yet. Functions to prep the DRB network are currently included in the delaware-model-prep [repo](https://github.com/USGS-R/delaware-model-prep).  
   
